@@ -11,6 +11,7 @@ use App\Entity\User;
 use Doctrine\Common\Persistence\ObjectManager;
 use Symfony\Component\Security\Core\Encoder\UserPasswordEncoderInterface;
 use App\Repository\UserRepository;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Security\Csrf\TokenGenerator\TokenGeneratorInterface;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 
@@ -93,7 +94,7 @@ class SecurityController extends AbstractController
                     $user->getPassword()
                 )
             );
-            dump($user);
+
             $this->manager->persist($user);
             $this->manager->flush();
 
@@ -112,16 +113,26 @@ class SecurityController extends AbstractController
     }
 
     /**
-     * @Route("/mot-de-passe", name="forgot_password")
+     * @Route("/forgot-password", name="forgot_password")
+     * @Route("/api/forgot-password")
      *
      * @return void
      */
-    public function forgotPassword(Request $request, UserRepository $userRepository, TokenGeneratorInterface $tokenGenerator, \Swift_Mailer $mailer){
+    public function forgotPassword(Request $request, UserRepository $userRepository, TokenGeneratorInterface $tokenGenerator, \Swift_Mailer $mailer)
+    {
 
-        if($request->isMethod("POST")){
-            $email = $request->request->get('_email');
+        if ($request->isMethod("POST")) {
+            $content = $request->getContent();
+
+            if (json_decode($content, true)['email'] != null) $email = json_decode($request->getContent(), true)['email'];
+            else $email = $request->request->get('_email');
 
             $user = $userRepository->findOneByEmail($email);
+
+            if (json_decode($content, true)['email'] != null && $user === null) return new JsonResponse([
+                "code" => 404,
+                "message" => "L'email {$email} ne correspond à aucun utilisateur"
+            ], 404);
 
             if ($user === null) {
                 $this->addFlash('danger', 'Aucun utilisateur ne possède cet email !');
@@ -131,7 +142,7 @@ class SecurityController extends AbstractController
 
             $token = $tokenGenerator->generateToken();
 
-            try{
+            try {
                 $user->setResetToken($token);
 
                 $this->manager->flush();
@@ -144,22 +155,28 @@ class SecurityController extends AbstractController
             $url = $this->generateUrl('reset_password', ['token' => $token], UrlGeneratorInterface::ABSOLUTE_URL);
 
             $message = (new \Swift_Message('Forgot Password'))
-                ->setFrom('aaubert.test@gmail.com')
+                ->setSubject("Récupération de votre mot de passe")
+                ->setFrom('test.alex.dematos@gmail.com')
                 ->setTo($user->getEmail())
                 ->setBody(
                     $this->renderView(
-                        'emails/reset_password.html.twig',[
+                        'emails/reset_password.html.twig',
+                        [
                             'url' => $url,
                             'date' => new \DateTime()
                         ]
                     ),
                     'text/html'
                 );
- 
+
             $mailer->send($message);
 
-            $this->addFlash('success', "Email bien envoyé à l'adresse <strong>{$user->getEmail()}</strong>");
+            if (json_decode($content, true)['email'] != null) return new JsonResponse([
+                "code" => 200,
+                "message" => "Un email à bien été envoyé à l'adresse {$email}"
+            ], 200);
 
+            $this->addFlash('success', "Email bien envoyé à l'adresse <strong>{$user->getEmail()}</strong>");
         }
 
         return $this->render('security/forgot_password.html.twig', [
