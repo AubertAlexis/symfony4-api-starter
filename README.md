@@ -24,6 +24,10 @@ This is a simple starter who can be used for any project with back-office.
 * **Single user** -> GET /api/users/{id} {access_token} Get a single user for admin and owner
 * **Update user** -> PUT /api/users/{id} {access_token} Update a single user for admin and owner
 
+* **Login** -> GET /api/login_check Login
+* **Register** -> POST /api/users {access_token} Register a new User
+* **Forgot password** -> POST forgot-password {access_token} Forgot password by email
+
 ## Tips
 
 ##### Login :
