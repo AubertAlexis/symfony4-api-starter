@@ -7,8 +7,20 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Constraints\DateTime;
+use ApiPlatform\Core\Annotation\ApiResource;
+
 
 /**
+ *  @ApiResource(
+ *  collectionOperations={
+ *      "GET"={"access_control"="is_granted('ROLE_ADMIN')", "access_control_message"="Vous n'êtes pas autorisé à voir la liste des utilisateurs, pour cela connectez-vous en tant qu'administrateur."}, 
+ *      "POST"={"validation_groups"={"postValidation"}}
+ *  },
+ *  itemOperations={
+ *      "GET"={"access_control"="is_granted('ROLE_ADMIN') or object == user", "access_control_message"="Vous n'êtes pas autorisé à voir cet utilisateur, pour cela connectez-vous en tant qu'administrateur ou vérifier que cet utilisateur soit bien le vôtre."}, 
+ *      "PUT"={"validation_groups"={"putValidation"}, "access_control"="is_granted('ROLE_ADMIN') or object == user", "access_control_message"="Vous n'êtes pas autorisé à éditer cet utilisateur, pour cela connectez-vous en tant qu'administrateur ou vérifier que cet utilisateur soit bien le vôtre."}
+ *  }
+ * )
  * @ORM\Entity
  * @UniqueEntity("email", message="Cet email est déjà pris par un autre utilisateur, merci de le changer !")
  */
@@ -23,33 +35,40 @@ class User implements UserInterface
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\Length(min=3, minMessage="Le prénom doit faire au minimum 3 caractères", max=255, maxMessage="Le prénom doit faire au maximum 255 caractères", groups={"postValidation", "putValidation"})     * 
      */
     private $firstName;
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\Length(min=3, minMessage="Le nom doit faire au minimum 3 caractères", max=255, maxMessage="Le nom doit faire au maximum 255 caractères", groups={"postValidation", "putValidation"})     * 
      */
     private $lastName;
 
     /**
      * @ORM\Column(type="string", length=255, unique=true)
-     * @Assert\Email(message = "L'email '{{ value }}' n'est pas valide.")
+     * @Assert\NotBlank(message="L'email est obligatoire", groups={"postValidation", "putValidation"})
+     * @Assert\Email(message = "L'email '{{ value }}' n'est pas valide.", groups={"postValidation", "putValidation"})
      */
     private $email;
 
     /**
      * @ORM\Column(type="string", length=255)
-     * @Assert\Length(min = 5, minMessage = "Votre nom d'utilisateur doit faire au minimum {{ limit }} caractères")
+     * @Assert\NotBlank(message="Le nom d'utilisateur est obligatoire", groups={"postValidation", "putValidation"})
+     * @Assert\Length(min=3, minMessage="Le nom d'utilisateur doit faire au minimum 3 caractères", max=255, maxMessage="Le nom d'utilisateur doit faire au maximum 255 caractères", groups={"postValidation", "putValidation"})
      */
     private $username;
 
     /**
      * @ORM\Column(type="json")
+     * @Assert\NotBlank(message="Le rôle est obligatoire", groups={"postValidation", "putValidation"})
      */
     private $roles = [];
 
     /**
      * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank(message="Le mot de passe est obligatoire", groups={"postValidation", "putValidation"})
+     * @Assert\Length(min=4, minMessage="Le mot de passe doit faire au minimum 4 caractères", max=255, maxMessage="Le mot de passe doit faire au maximum 255 caractères", groups={"postValidation", "putValidation"})
      */
     private $password;
 
@@ -172,7 +191,7 @@ class User implements UserInterface
         return $this;
     }
 
-    public function getResetToken(): string
+    public function getResetToken(): ?string
     {
         return $this->resetToken;
     }
