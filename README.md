@@ -19,6 +19,11 @@ This is a simple starter who can be used for any project with back-office.
 * **Profil** (at right on top) -> edit your personnal informations
 * **Parameter** (at right on top) -> change your password
 
+#### API
+* **List of users** -> GET /api/users {access_token} Get all users form admin
+* **Single user** -> GET /api/users/{id} {access_token} Get a single user for admin and owner
+* **Update user** -> PUT /api/users/{id} {access_token} Update a single user for admin and owner
+
 ## Tips
 
 ##### Login :
